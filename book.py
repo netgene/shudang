@@ -75,7 +75,7 @@ def postgps():
 	gpsdata = geohash.encode(gpsx, gpsy)
 	key = gpsdata + "_" + userid
 	r.set(key, gpsdata)
-	return jsonify({'gps':r.get(gpsdata)})
+	return jsonify({'gps':r.get(key)})
 
 @app.route('/usernearby', methods=['POST'])
 def getusernearby():
