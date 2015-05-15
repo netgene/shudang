@@ -9,7 +9,8 @@ import geohash
 #curl -i http://127.0.0.1:5000/book/1
 #curl -i -H "Content-Type: application/json" -X POST -d '{"name":"mybook", "price":49.8, "author":"long", "publisher":"publisher", "publishnum":1, "pagenum":353, "wordnum":335000, "isbn":"9787539981697", "type":1}' http://127.0.0.1:5000/book
 #curl -i -X DELETE http://127.0.0.1:5000/book/3
-#curl -i -H "Content-Type: application/json" -X POST -d '{"userid":"123" "gpsx":39.92324, "gpsy":116.3906}' http://127.0.0.1:5000/gps
+#curl -i -H "Content-Type: application/json" -X POST -d '{"userid":"123", "gpsx":39.92324, "gpsy":116.3906}' http://127.0.0.1:5000/gps
+#curl -i -H "Content-Type: application/json" -X POST -d '{"gpsx":39.92324, "gpsy":116.3906}' http://127.0.0.1:5000/usernearby
 
 conn = MySQLdb.connect(host='localhost', user='root', passwd='0709', db='shudang', charset='utf8')
 cur = conn.cursor()
