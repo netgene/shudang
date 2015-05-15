@@ -2,14 +2,19 @@
 from flask import Flask, request, render_template, jsonify, make_response, abort
 #from itsdangerous import TimedJSONWebSignatureSerializer as TimedJSONWebSignatureSerializer
 import MySQLdb
+import redis
+import geohash
 
 #curl -i http://127.0.0.1:5000/book
 #curl -i http://127.0.0.1:5000/book/1
 #curl -i -H "Content-Type: application/json" -X POST -d '{"name":"mybook", "price":49.8, "author":"long", "publisher":"publisher", "publishnum":1, "pagenum":353, "wordnum":335000, "isbn":"9787539981697", "type":1}' http://127.0.0.1:5000/book
 #curl -i -X DELETE http://127.0.0.1:5000/book/3
+#curl -i -H "Content-Type: application/json" -X POST -d '{"userid":"123" "gpsx":39.92324, "gpsy":116.3906}' http://127.0.0.1:5000/gps
 
 conn = MySQLdb.connect(host='localhost', user='root', passwd='0709', db='shudang', charset='utf8')
 cur = conn.cursor()
+
+r = redis.StrictRedis(host='127.0.0.1', port=6379)
 
 app = Flask(__name__)
 
@@ -54,6 +59,33 @@ def deletebook(bookid):
 	cur.execute('select id,name,price,author,publisher,publishnum,pagenum,wordnum,isbn,type from sdbook')
 	books = cur.fetchall()
 	return jsonify({'books':books}), 201
+
+@app.route('/gps', methods=['GET'])
+def getgpss():
+	return jsonify({'gps':r.get('wx4g0ec19x3d')})
+
+@app.route('/gps', methods=['POST'])
+def postgps():
+	if not request.json:
+		abort(404)
+	gpsx = request.json['gpsx']
+	gpsy = request.json['gpsy']
+	userid = request.json['userid']
+	gpsdata = geohash.encode(gpsx, gpsy)
+	key = gpsdata + "_" + userid
+	r.set(key, gpsdata)
+	return jsonify({'gps':r.get(gpsdata)})
+
+@app.route('/usernearby', methods=['POST'])
+def getusernearby():
+	if not request.json:
+		abort(404)
+	gpsx = request.json['gpsx']
+	gpsy = request.json['gpsy']
+	gpsdata = geohash.encode(gpsx, gpsy)
+	key = gpsdata[:5] + "*"
+	nearbys = r.keys(key)
+	return jsonify({'gps':nearbys})
 
 @app.errorhandler(404)
 def not_found(error):

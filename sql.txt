@@ -1,0 +1,12 @@
+create table sdbook(id int NOT NULL AUTO_INCREMENT, name varchar(50), price float, author varchar(50), publisher varchar(50), publishtimie date, publishnum int, pagenum int, wordnum int, ISBN varchar(20), type int,memo varchar(100), createdate date, primary key(id));
+
+create table sdpic(id int NOT NULL AUTO_INCREMENT, bookid int, path varchar(255), createdate date, primary key(id));
+
+create table sdcustpic(id int NOT NULL AUTO_INCREMENT, bookid int, path varchar(255), createdate date, primary key(id));
+
+create table sdbooktrade(id int NOT NULL AUTO_INCREMENT, bookid int, type int, status int, createdate date, primary key(id));
+
+create table sdcustinfo(id int NOT NULL AUTO_INCREMENT, account varchar(50), pssword varchar(50), dangname varchar(50), dangstatus int, mobile varchar(50), address varchar(100), email varchar(50), gps varchar(20));
+
+insert into sdbook(name, price, author, publisher, publishnum, pagenum, wordnum, isbn, type) values ('成龙：还没长大就老了', 49.8, '成龙 朱墨', '江苏凤凰文艺出版社', 1, 353, 335000, '9787539981697', 1);
+
