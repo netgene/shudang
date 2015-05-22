@@ -1,9 +1,11 @@
 #coding=utf-8
 from flask import Flask, request, render_template, jsonify, make_response, abort
+from flask.ext.httpauth import HTTPBasicAuth
 #from itsdangerous import TimedJSONWebSignatureSerializer as TimedJSONWebSignatureSerializer
 import MySQLdb
 import redis
 import geohash
+import jwt
 
 #curl -i http://127.0.0.1:5000/book
 #curl -i http://127.0.0.1:5000/book/1
@@ -11,6 +13,7 @@ import geohash
 #curl -i -X DELETE http://127.0.0.1:5000/book/3
 #curl -i -H "Content-Type: application/json" -X POST -d '{"userid":"123", "gpsx":39.92324, "gpsy":116.3906}' http://127.0.0.1:5000/gps
 #curl -i -H "Content-Type: application/json" -X POST -d '{"gpsx":39.92324, "gpsy":116.3906}' http://127.0.0.1:5000/usernearby
+#curl -i -H "Content-Type: application/json" -X POST -d '{"user":"abc", "pwd":"123"}' http://127.0.0.1:5000/login
 
 conn = MySQLdb.connect(host='localhost', user='root', passwd='0709', db='shudang', charset='utf8')
 cur = conn.cursor()
@@ -18,6 +21,7 @@ cur = conn.cursor()
 r = redis.StrictRedis(host='127.0.0.1', port=6379)
 
 app = Flask(__name__)
+auth = HTTPBasicAuth()
 
 @app.route('/', methods=['GET'])
 def roots():
@@ -26,6 +30,7 @@ def roots():
 	return jsonify({'books':books})
 
 @app.route('/book', methods=['GET'])
+@auth.login_required
 def getbooks():
 	cur.execute('select id,name,price,author,publisher,publishnum,pagenum,wordnum,isbn,type from sdbook')
 	books = cur.fetchall()
@@ -87,6 +92,25 @@ def getusernearby():
 	key = gpsdata[:5] + "*"
 	nearbys = r.keys(key)
 	return jsonify({'gps':nearbys})
+
+@app.route('/login', methods=['POST'])
+def login():
+	if not request.json:
+		abort(404)
+	user = request.json['user']
+	pwd = request.json['pwd']
+	encoded = jwt.encode({user: 'payload'}, 'secret', algorithm='HS256')
+	print jwt.decode(encoded, 'secret', algorithms=['HS256'])
+	r.set(encoded, '1')
+	return jsonify({'token':encoded})
+
+@auth.verify_password
+def verify_password(username_or_token, password):
+	tokeninfo = r.keys(username_or_token)
+	print tokeninfo
+	if tokeninfo == "[]":
+		return False
+	return True
 
 @app.errorhandler(404)
 def not_found(error):
