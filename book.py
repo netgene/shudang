@@ -30,10 +30,23 @@ def roots():
 	return jsonify({'books':books})
 
 @app.route('/book', methods=['GET'])
-@auth.login_required
 def getbooks():
 	cur.execute('select id,name,price,author,publisher,publishnum,pagenum,wordnum,isbn,type from sdbook')
-	books = cur.fetchall()
+	results = cur.fetchall()
+	books = []
+	for row in results:
+		book = {}
+		book['id'] = row[0]
+		book['name'] = row[1]
+		book['price'] = row[2]
+		book['author'] = row[3]
+		book['publisher'] = row[4]
+		book['publishnum'] = row[5]
+		book['pagenum'] = row[6]
+		book['wordnum'] = row[7]
+		book['isbn'] = row[8]
+		book['type'] = row[9]
+		books.append(book)
 	return jsonify({'books':books})
 
 @app.route('/book/<int:bookid>', methods=['GET'])
@@ -108,7 +121,7 @@ def login():
 def verify_password(username_or_token, password):
 	tokeninfo = r.keys(username_or_token)
 	print tokeninfo
-	if tokeninfo == "[]":
+	if not tokeninfo:
 		return False
 	return True
 
