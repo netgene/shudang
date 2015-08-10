@@ -1,11 +1,14 @@
 #coding=utf-8
-from flask import Flask, request, render_template, jsonify, make_response, abort
+from flask import Flask, request, render_template, jsonify, make_response, abort, send_from_directory
 from flask.ext.httpauth import HTTPBasicAuth
 #from itsdangerous import TimedJSONWebSignatureSerializer as TimedJSONWebSignatureSerializer
 import MySQLdb
 import redis
 import geohash
 import jwt
+import json
+import os
+from werkzeug import secure_filename
 
 #curl -i http://127.0.0.1:5000/book
 #curl -i http://127.0.0.1:5000/book/1
@@ -14,6 +17,7 @@ import jwt
 #curl -i -H "Content-Type: application/json" -X POST -d '{"userid":"123", "gpsx":39.92324, "gpsy":116.3906}' http://127.0.0.1:5000/gps
 #curl -i -H "Content-Type: application/json" -X POST -d '{"gpsx":39.92324, "gpsy":116.3906}' http://127.0.0.1:5000/usernearby
 #curl -i -H "Content-Type: application/json" -X POST -d '{"user":"abc", "pwd":"123"}' http://127.0.0.1:5000/login
+#url --form "myfiles=@/media/sf_share/shudang/k.jpg" http://localhost:5000/upload
 
 conn = MySQLdb.connect(host='localhost', user='root', passwd='0709', db='shudang', charset='utf8')
 cur = conn.cursor()
@@ -30,6 +34,7 @@ def roots():
 	return jsonify({'books':books})
 
 @app.route('/book', methods=['GET'])
+#@auth.login_required
 def getbooks():
 	cur.execute('select id,name,price,author,publisher,publishnum,pagenum,wordnum,isbn,type from sdbook')
 	results = cur.fetchall()
@@ -37,7 +42,7 @@ def getbooks():
 	for row in results:
 		book = {}
 		book['id'] = row[0]
-		book['name'] = row[1]
+		book['Title'] = row[1]
 		book['price'] = row[2]
 		book['author'] = row[3]
 		book['publisher'] = row[4]
@@ -47,7 +52,8 @@ def getbooks():
 		book['isbn'] = row[8]
 		book['type'] = row[9]
 		books.append(book)
-	return jsonify({'books':books})
+	return json.dumps(books);
+	#return jsonify({'books':books})
 
 @app.route('/book/<int:bookid>', methods=['GET'])
 def getbook(bookid):
@@ -116,6 +122,29 @@ def login():
 	print jwt.decode(encoded, 'secret', algorithms=['HS256'])
 	r.set(encoded, '1')
 	return jsonify({'token':encoded})
+
+
+
+app.config['UPLOAD_FOLDER'] = 'pic/'
+app.config['ALLOWED_EXTENSIONS'] = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+def allowed_file(filename):
+	return '.' in filename and filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
+
+@app.route('/upload', methods=['POST'])
+def upload():
+	uploaded_files = request.files.getlist("myfiles[]")
+	print uploaded_files
+	filenames = []
+	for file in uploaded_files:
+		if file and allowed_file(file.filename):
+			filename = secure_filename(file.filename)
+			file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename))
+			filenames.append(filename)
+	return jsonify({'return': 'OK'})
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+	return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @auth.verify_password
 def verify_password(username_or_token, password):
